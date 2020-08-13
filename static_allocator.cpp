@@ -61,7 +61,7 @@ public:
 
     // Alias: Value types
     using value_type         = T;
-    
+
 	// Alias: Pointer as pointer to value type
 	using pointer            = T *;
 
@@ -372,6 +372,9 @@ using MyVector = std::vector<T, Static_Allocator<T>>;
 int main()
 {
     Static_Allocator<int> my_allocator{memory_map, 4096};
+
+    // Free bytes check
+    std::cout << "Free bytes remaining = " << vector_1.get_allocator().free_size() << "\n";
 
 	// Create vector, but supply parameters to the template arguments
 	MyVector<int> vector_1{5, my_allocator};
