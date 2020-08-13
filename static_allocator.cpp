@@ -59,6 +59,9 @@ private:
 
 public:
 
+    // Alias: Value types
+    using value_type         = T;
+    
 	// Alias: Pointer as pointer to value type
 	using pointer            = T *;
 
