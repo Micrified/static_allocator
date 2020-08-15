@@ -109,6 +109,13 @@ public:
         return *this;
     }
 
+    // Empty constuctor that does nothing
+    Static_Allocator ():
+        d_allocator_info_p(nullptr)
+    {
+        // Nothing to do
+    }
+
     // Constructor
     Static_Allocator (void *static_memory_map, size_t capacity)
     {
@@ -161,6 +168,7 @@ public:
     pointer allocate (size_type n_obj)
     {
         std::cout << "allocate(" << n_obj << ")" << std::endl;
+
     	size_t n_bytes = (n_obj * sizeof(T));
     	return reinterpret_cast<pointer>(this->allocate_b(n_bytes));
     }
@@ -260,6 +268,12 @@ public:
     	size_t const unit_size = sizeof(block_h);
 
         std::cout << "deallocate(" << n_obj << ")" << std::endl;
+
+        // Check: Validity of state
+        if (d_allocator_info_p == nullptr)
+        {
+            throw std::invalid_argument("Uninitialized static memory");
+        }
 
     	// Parameter check: Is pointer valid
     	if (ptr == nullptr) {
@@ -366,49 +380,49 @@ public:
 
 
 
-char memory_map[4096];
+// char memory_map[4096];
 
-template <typename T>
-using MyVector = std::vector<T, Static_Allocator<T>>;
+// template <typename T>
+// using MyVector = std::vector<T, Static_Allocator<T>>;
 
-int main()
-{
-    Static_Allocator<int> my_allocator{memory_map, 4096};
+// int main()
+// {
+//     Static_Allocator<int> my_allocator{memory_map, 4096};
 
-    // Free bytes check
-    std::cout << "Free bytes remaining = " << my_allocator.free_size() << "\n";
+//     // Free bytes check
+//     std::cout << "Free bytes remaining = " << my_allocator.free_size() << "\n";
 
-	// Create vector, but supply parameters to the template arguments
-    {
-    	MyVector<int> vector_1{5, my_allocator};
-        MyVector<int> vector_2{3, my_allocator};
+// 	// Create vector, but supply parameters to the template arguments
+//     {
+//     	MyVector<int> vector_1{5, my_allocator};
+//         MyVector<int> vector_2{3, my_allocator};
 
-        // Vec 1
-    	vector_1[0] = 1;
-    	vector_1[1] = 2;
-    	vector_1[2] = 3;
-    	vector_1[3] = 4;
-    	vector_1[4] = 5;
+//         // Vec 1
+//     	vector_1[0] = 1;
+//     	vector_1[1] = 2;
+//     	vector_1[2] = 3;
+//     	vector_1[3] = 4;
+//     	vector_1[4] = 5;
 
-        // Vec 2
-        vector_2[0] = 6;
-        vector_2[1] = 7;
-        vector_2[2] = 8;
+//         // Vec 2
+//         vector_2[0] = 6;
+//         vector_2[1] = 7;
+//         vector_2[2] = 8;
 
-        // Print allocator pointers to make sure they are the same
-        // std::cout << "Vector_1 allocator: " << vector_1.get_allocator() << std::endl;
-        // std::cout << "Vector_2 allocator: " << vector_2.get_allocator() << std::endl;
-        for (int i = 0; i < 5; ++i) { std::cout << "vector_1[" << i << "] = " << vector_1[i] << std::endl; }
-        for (int i = 0; i < 3; ++i) { std::cout << "vector_2[" << i << "] = " << vector_2[i] << std::endl; }
-    }
+//         // Print allocator pointers to make sure they are the same
+//         // std::cout << "Vector_1 allocator: " << vector_1.get_allocator() << std::endl;
+//         // std::cout << "Vector_2 allocator: " << vector_2.get_allocator() << std::endl;
+//         for (int i = 0; i < 5; ++i) { std::cout << "vector_1[" << i << "] = " << vector_1[i] << std::endl; }
+//         for (int i = 0; i < 3; ++i) { std::cout << "vector_2[" << i << "] = " << vector_2[i] << std::endl; }
+//     }
 
-    std::cout << "Free bytes remaining = " << my_allocator.free_size() << "\n";
-    std::cout << "Unified = " << my_allocator.unified() << std::endl;
+//     std::cout << "Free bytes remaining = " << my_allocator.free_size() << "\n";
+//     std::cout << "Unified = " << my_allocator.unified() << std::endl;
 
-    // Check for unified memory
+//     // Check for unified memory
 
 
-	return 0;
-}
+// 	return 0;
+// }
 
 #endif
