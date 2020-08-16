@@ -43,7 +43,9 @@ extern "C" {
 #include "static_allocator.cpp"
 
 
+// Max length of the shared allocator
 #define MAX_SHM_MAP_NAME_SIZE        32
+
 
 template <class T>
 class Shared_Allocator
@@ -257,7 +259,8 @@ public:
 		if (destroy)
 		{
 			int err;
-			std::cout << "~Shared_Allocator(destroy=true)" << std::endl;
+			std::cout << "[" << getpid() << "] "
+			    << "~Shared_Allocator(destroy=true)" << std::endl;
 			// #1: delete semaphore
 			if (sem_destroy(&(d_shared_map_info_p->sem)) == -1)
 			{
@@ -287,7 +290,8 @@ public:
 					"shm_unlink");
 			}
 		} else {
-			std::cout << "~Shared_Allocator(destroy=false)" << std::endl;
+			std::cout << "[" << getpid() << "] "
+			    << "~Shared_Allocator(destroy=false)" << std::endl;
 		}
 	}
 
@@ -355,34 +359,55 @@ int main ()
 	char const *shared_map_name = "rosmem";
 	size_t shared_map_size = 4096;
 
+	// Get process PID
+	int pid = getpid();
+
 	// Make the shared allocator
 	Shared_Allocator<int> my_allocator{shared_map_name, shared_map_size};
 
 	// Display the number of bytes
-	std::cout << "Bytes (asked = " << shared_map_size
-	          << ", allocated = "  << my_allocator.free_size()
+	std::cout << "[" << pid << "] "
+			  << "Bytes (asked = " << shared_map_size
+	          << ", free = "  << my_allocator.free_size()
 	          << ")" << std::endl;
 
 	// Allocate a vector
 	{
-		std::vector<int, Shared_Allocator<int>> my_vector{5, my_allocator};
+		std::vector<int, Shared_Allocator<int>> my_vector{6, my_allocator};
 
-		// Insert some values 
-		my_vector[0] = 1;
-		my_vector[1] = 2;
-		my_vector[2] = 3;
-		my_vector[3] = 4;
-		my_vector[4] = 5;
+		// Zero the vector
+		std::fill(my_vector.begin(), my_vector.end(), 0);
+
+		// Fork here
+		if (fork() == 0) {
+			pid = getpid();
+			my_vector[3] = 4;
+			my_vector[4] = 5;
+			my_vector[5] = 6;
+		} else {
+			my_vector[0] = 1;
+			my_vector[1] = 2;
+			my_vector[2] = 3;
+		}
+
+		// Both sleep for some time to allow each other to catch up
+		sleep(1);
+		// TODO: Need sync here
 
 		// Print some output
-		std::cout << "Sum of vector = " << 
+		std::cout << "[" << pid << "] "
+	        << "Sum of vector = " << 
 		    (my_vector[0] + my_vector[1] + my_vector[2] + 
-		     my_vector[3] + my_vector[4]) << std::endl;
+		     my_vector[3] + my_vector[4] + my_vector[5]) << std::endl;
+
+		// TODO: Need some kind of barrier here for deallocation control
     }
 
 	// Memory check
-	std::cout << "Bytes (allocated = " << my_allocator.free_size() << ")" << std::endl;
-	std::cout << "Unified = " << my_allocator.unified() << std::endl;
+	std::cout << "[" << getpid() << "] " <<
+	    "Bytes (allocated = " << my_allocator.free_size() << ")" << std::endl;
+	std::cout << "[" << getpid() << "] " <<
+	    "Unified = " << my_allocator.unified() << std::endl;
 
 	return 0;
 }
